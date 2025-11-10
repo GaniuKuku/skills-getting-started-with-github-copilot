@@ -142,3 +142,64 @@ footer {
   padding: 20px;
   color: #666;
 }
+
+/* Participants section */
+.participants {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #e0e0e0;
+}
+
+.participants h5 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+}
+
+.participants ul {
+  /* hide default bullet points and use our own layout */
+  list-style: none;
+  margin-left: 0;
+  margin-bottom: 0;
+  padding-left: 0;
+}
+
+.participants li {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #444;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.participants li:hover {
+  background-color: #f1f7ff;
+}
+
+/* Delete button next to participant */
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #c62828;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.delete-btn:hover {
+  background: rgba(198, 40, 40, 0.08);
+}
+
+/* Empty state for participants */
+.no-participants {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  padding: 4px 0;
+}
