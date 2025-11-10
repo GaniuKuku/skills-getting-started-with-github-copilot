@@ -17,7 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
-      const response = await fetch("/activities");
+      // Request fresh data (avoid cached responses)
+      const response = await fetch("/activities", { cache: "no-store" });
       const activities = await response.json();
 
       // Clear loading message and previous options
@@ -31,28 +32,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Build participants section HTML
+        // Build participants section DOM (so we can attach delete handlers)
         const participants = details.participants || [];
-        let participantsHtml = '<div class="participants">';
-        participantsHtml += "<h5>Participants</h5>";
+
+        const participantsWrap = document.createElement("div");
+        participantsWrap.className = "participants";
+
+        const h5 = document.createElement("h5");
+        h5.textContent = "Participants";
+        participantsWrap.appendChild(h5);
+
         if (participants.length) {
-          participantsHtml += "<ul>";
-          participantsHtml += participants
-            .map((p) => `<li>${escapeHtml(p)}</li>`)
-            .join("");
-          participantsHtml += "</ul>";
+          const ul = document.createElement("ul");
+          participants.forEach((p) => {
+            const li = document.createElement("li");
+
+            const span = document.createElement("span");
+            span.textContent = p;
+
+            const delBtn = document.createElement("button");
+            delBtn.className = "delete-btn";
+            delBtn.title = "Unregister participant";
+            delBtn.setAttribute("data-activity", name);
+            delBtn.setAttribute("data-email", p);
+            delBtn.innerHTML = "&times;"; // simple X icon
+
+            // Attach click handler to unregister participant
+            delBtn.addEventListener("click", async (e) => {
+              e.preventDefault();
+              const activityName = delBtn.getAttribute("data-activity");
+              const email = delBtn.getAttribute("data-email");
+
+              if (!confirm(`Remove ${email} from ${activityName}?`)) return;
+
+              try {
+                const resp = await fetch(
+                  `/activities/${encodeURIComponent(activityName)}/participants?email=${encodeURIComponent(email)}`,
+                  { method: "DELETE" }
+                );
+
+                const result = await resp.json();
+                if (resp.ok) {
+                  // Remove list item from DOM
+                  li.remove();
+                  // Refresh activity list to keep counts accurate and ensure UI shows latest data
+                  await fetchActivities();
+                } else {
+                  messageDiv.textContent = result.detail || result.message || "Failed to remove participant";
+                  messageDiv.className = "error";
+                  messageDiv.classList.remove("hidden");
+                  setTimeout(() => messageDiv.classList.add("hidden"), 5000);
+                }
+              } catch (err) {
+                console.error("Error removing participant:", err);
+                messageDiv.textContent = "Failed to remove participant. Please try again.";
+                messageDiv.className = "error";
+                messageDiv.classList.remove("hidden");
+                setTimeout(() => messageDiv.classList.add("hidden"), 5000);
+              }
+            });
+
+            li.appendChild(span);
+            li.appendChild(delBtn);
+            ul.appendChild(li);
+          });
+          participantsWrap.appendChild(ul);
         } else {
-          participantsHtml += '<p class="no-participants">No participants yet</p>';
+          const pEmpty = document.createElement("p");
+          pEmpty.className = "no-participants";
+          pEmpty.textContent = "No participants yet";
+          participantsWrap.appendChild(pEmpty);
         }
-        participantsHtml += "</div>";
 
         activityCard.innerHTML = `
           <h4>${escapeHtml(name)}</h4>
           <p>${escapeHtml(details.description)}</p>
           <p><strong>Schedule:</strong> ${escapeHtml(details.schedule)}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-          ${participantsHtml}
         `;
+
+        activityCard.appendChild(participantsWrap);
 
         activitiesList.appendChild(activityCard);
 
@@ -85,12 +144,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const result = await response.json();
 
-      if (response.ok) {
+        if (response.ok) {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
         // Refresh activities list so participants update immediately
-        fetchActivities();
+        await fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
